@@ -62,12 +62,17 @@ function CardRender({
   sticker: string;
   size: (typeof SIZES)[0];
 }) {
+  // For mobile display, scale down the fixed-size card to fit screen
+  const scaleStyle = typeof window !== "undefined" && window.innerWidth < 640
+    ? { transform: `scale(${Math.min(1, (window.innerWidth - 32) / size.w)})`, transformOrigin: "top center" }
+    : {};
+
   return (
     <div
       ref={cardRef}
       id="card-preview"
       className={`relative overflow-hidden ${t.bgClass} ${t.borderClass} flex-shrink-0`}
-      style={{ width: size.w, height: size.h, borderRadius: 20 }}
+      style={{ width: size.w, height: size.h, borderRadius: 20, ...scaleStyle }}
     >
       {/* Arabesque pattern */}
       <div
@@ -196,20 +201,20 @@ function CustomizePage() {
   const printCard = () => window.print();
 
   return (
-    <div className="min-h-screen py-8 px-4" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen py-6 px-4 pb-28 md:pb-8" style={{ background: "var(--bg)" }}>
       <Toast />
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-serif font-bold mb-2" style={{ color: "var(--text)" }}>
+        <div className="text-center mb-6">
+          <h1 className="text-2xl md:text-4xl font-serif font-bold mb-1" style={{ color: "var(--text)" }}>
             Customize Your Card
           </h1>
-          <p style={{ color: "var(--text-secondary)" }}>
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
             {t.name} — {t.category}
           </p>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-6">
           {/* ── LEFT: Controls ─────────────────────────────────── */}
           <div className="w-full lg:w-[380px] flex-shrink-0 space-y-5">
 
@@ -376,9 +381,9 @@ function CustomizePage() {
           </div>
 
           {/* ── RIGHT: Preview + Actions ───────────────────────── */}
-          <div className="flex-1 flex flex-col items-center gap-6">
-            {/* Preview container */}
-            <div className="w-full flex items-center justify-center">
+          <div className="flex-1 flex flex-col items-center gap-5">
+            {/* Preview container — scales to fit mobile screen */}
+            <div className="w-full flex items-center justify-center overflow-hidden">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={t.id + size.value}
@@ -386,37 +391,49 @@ function CustomizePage() {
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.35 }}
-                  className="relative"
-                  style={{ maxWidth: "100%", overflow: "auto" }}
+                  className="relative flex items-center justify-center w-full"
+                  style={{
+                    height: `min(${size.h}px, calc((100vw - 32px) * ${size.h / size.w}))`,
+                  }}
                 >
-                  <CardRender
-                    cardRef={cardRef}
-                    t={t} name={name} message={message} greeting={greeting}
-                    fontClass={fontClass} fontSize={fontSize} textColor={textColor}
-                    useUrdu={useUrdu} sticker={sticker} size={size}
-                  />
-
-                  {/* Zoom icon */}
-                  <button
-                    onClick={() => setZoomOpen(true)}
-                    id="zoom-preview-btn"
-                    className="absolute top-3 right-3 p-2 bg-black/40 hover:bg-black/70 backdrop-blur-sm rounded-full text-white transition-all"
-                    title="Zoom preview"
+                  <div
+                    style={{
+                      transform: `scale(${Math.min(1, 1)})`,
+                      width: size.w,
+                      height: size.h,
+                      transformOrigin: "center",
+                      scale: `min(1, calc((100vw - 32px) / ${size.w}))`,
+                    }}
+                    className="relative"
                   >
-                    <ZoomIn className="w-4 h-4" />
-                  </button>
+                    <CardRender
+                      cardRef={cardRef}
+                      t={t} name={name} message={message} greeting={greeting}
+                      fontClass={fontClass} fontSize={fontSize} textColor={textColor}
+                      useUrdu={useUrdu} sticker={sticker} size={size}
+                    />
+                    {/* Zoom icon */}
+                    <button
+                      onClick={() => setZoomOpen(true)}
+                      id="zoom-preview-btn"
+                      className="absolute top-3 right-3 p-2.5 bg-black/50 backdrop-blur-sm rounded-full text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
+                      title="Zoom preview"
+                    >
+                      <ZoomIn className="w-4 h-4" />
+                    </button>
+                  </div>
                 </motion.div>
               </AnimatePresence>
             </div>
 
-            {/* Action buttons */}
+            {/* Action buttons — hidden download on mobile (sticky version below) */}
             <div className="w-full grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {/* Download */}
+              {/* Download — hidden on mobile, shown via sticky bar */}
               <button
                 id="download-btn"
                 onClick={download}
                 disabled={downloading}
-                className={`col-span-2 sm:col-span-3 flex items-center justify-center gap-2 py-4 bg-[#C9A84C] hover:bg-[#A07830] text-[#1A1A2E] font-bold rounded-2xl transition-all hover:scale-[1.02] text-base ${downloading ? "opacity-70 cursor-not-allowed" : ""}`}
+                className={`hidden sm:flex col-span-2 sm:col-span-3 items-center justify-center gap-2 py-4 bg-[#C9A84C] hover:bg-[#A07830] text-[#1A1A2E] font-bold rounded-2xl transition-all hover:scale-[1.02] text-base ${downloading ? "opacity-70 cursor-not-allowed" : ""}`}
               >
                 {downloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
                 {downloading ? "Generating…" : "Download as JPG"}
@@ -453,7 +470,7 @@ function CustomizePage() {
             <button
               id="reset-btn"
               onClick={reset}
-              className="flex items-center gap-2 text-sm hover:text-[#C9A84C] transition-colors"
+              className="flex items-center gap-2 text-sm hover:text-[#C9A84C] transition-colors min-h-[44px]"
               style={{ color: "var(--text-secondary)" }}
             >
               <RotateCcw className="w-4 h-4" /> Reset to defaults
@@ -463,6 +480,18 @@ function CustomizePage() {
             <RecentlyDownloaded />
           </div>
         </div>
+      </div>
+
+      {/* ── Sticky Download Bar — mobile only ─────────────── */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 p-4 glass border-t border-[#C9A84C]/20">
+        <button
+          onClick={download}
+          disabled={downloading}
+          className={`w-full flex items-center justify-center gap-2 py-4 bg-[#C9A84C] text-[#1A1A2E] font-bold rounded-2xl text-base transition-all active:scale-95 ${downloading ? "opacity-70" : ""}`}
+        >
+          {downloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+          {downloading ? "Generating…" : "Download as JPG"}
+        </button>
       </div>
 
       {/* Zoom modal */}
