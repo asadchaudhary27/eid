@@ -10,8 +10,11 @@ import { templates } from "@/data/templates";
 import type { CardTemplate } from "@/data/templates";
 import {
   Download, Share2, Copy, RotateCcw, Printer,
-  ZoomIn, X, ChevronLeft, ChevronRight, Loader2
+  ZoomIn, X, ChevronLeft, ChevronRight, Loader2, ImageDown
 } from "lucide-react";
+
+// Inline SVG arabesque pattern (no external CORS requests for html2canvas)
+const ARABESQUE_SVG = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M30 0 L60 30 L30 60 L0 30 Z' fill='none' stroke='white' stroke-width='0.5' opacity='0.3'/%3E%3Ccircle cx='30' cy='30' r='10' fill='none' stroke='white' stroke-width='0.5' opacity='0.3'/%3E%3Ccircle cx='0' cy='0' r='5' fill='none' stroke='white' stroke-width='0.5' opacity='0.2'/%3E%3Ccircle cx='60' cy='0' r='5' fill='none' stroke='white' stroke-width='0.5' opacity='0.2'/%3E%3Ccircle cx='0' cy='60' r='5' fill='none' stroke='white' stroke-width='0.5' opacity='0.2'/%3E%3Ccircle cx='60' cy='60' r='5' fill='none' stroke='white' stroke-width='0.5' opacity='0.2'/%3E%3C/svg%3E")`;
 
 const FONTS = [
   { label: "Playfair Display", value: "font-serif" },
@@ -74,10 +77,10 @@ function CardRender({
       className={`relative overflow-hidden ${t.bgClass} ${t.borderClass} flex-shrink-0`}
       style={{ width: size.w, height: size.h, borderRadius: 20, ...scaleStyle }}
     >
-      {/* Arabesque pattern */}
+      {/* Arabesque pattern — inline SVG, no CORS issues */}
       <div
         className="absolute inset-0 opacity-15 pointer-events-none"
-        style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/arabesque.png')" }}
+        style={{ backgroundImage: ARABESQUE_SVG, backgroundSize: "60px 60px" }}
       />
 
       {/* Content */}
@@ -138,6 +141,7 @@ function CustomizePage() {
   const [size, setSize] = useState(SIZES[0]);
   const [downloading, setDownloading] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [saveImageUrl, setSaveImageUrl] = useState<string | null>(null); // mobile fallback
   const cardRef = useRef<HTMLDivElement>(null);
   const templateIdx = templates.findIndex(x => x.id === t.id);
 
@@ -165,24 +169,56 @@ function CustomizePage() {
     try {
       const canvas = await html2canvas(cardRef.current, {
         scale: 2,
-        useCORS: true,
-        allowTaint: false,
+        useCORS: false,       // no external images needed anymore
+        allowTaint: true,
         backgroundColor: null,
         logging: false,
       });
-      const link = document.createElement("a");
-      const safeName = name.replace(/\s+/g, "_") || "Eid";
-      link.download = `EidMubarak_${safeName}_${Date.now()}.jpg`;
-      link.href = canvas.toDataURL("image/jpeg", 0.95);
-      link.click();
 
-      // Save to recently downloaded (localStorage)
+      const safeName = name.replace(/\s+/g, "_") || "Eid";
+      const fileName = `EidMubarak_${safeName}.jpg`;
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+      // ── Mobile: try native Web Share API first ──────────────
+      if (isMobile && navigator.share) {
+        canvas.toBlob(async (blob) => {
+          if (!blob) { toast("Could not generate image", "error"); setDownloading(false); return; }
+          const file = new File([blob], fileName, { type: "image/jpeg" });
+          try {
+            await navigator.share({ files: [file], title: "Eid Mubarak Card", text: greeting });
+            toast("Image shared! 🎉", "success");
+          } catch {
+            // Share cancelled or not supported — show save modal
+            setSaveImageUrl(canvas.toDataURL("image/jpeg", 0.95));
+          }
+        }, "image/jpeg", 0.95);
+        setDownloading(false);
+        return;
+      }
+
+      // ── Mobile fallback: open image so user can save ────────
+      if (isMobile) {
+        setSaveImageUrl(canvas.toDataURL("image/jpeg", 0.95));
+        setDownloading(false);
+        return;
+      }
+
+      // ── Desktop: standard download ──────────────────────────
+      const link = document.createElement("a");
+      link.download = fileName;
+      link.href = canvas.toDataURL("image/jpeg", 0.95);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Save to recently downloaded
       const recent = JSON.parse(localStorage.getItem("recentCards") ?? "[]");
       recent.unshift({ templateId: t.id, name, ts: Date.now() });
       localStorage.setItem("recentCards", JSON.stringify(recent.slice(0, 3)));
 
-      toast("Card downloaded successfully ✓", "success");
-    } catch {
+      toast("Card downloaded ✓", "success");
+    } catch (err) {
+      console.error(err);
       toast("Download failed — try again", "error");
     } finally {
       setDownloading(false);
@@ -524,6 +560,56 @@ function CustomizePage() {
                 useUrdu={useUrdu} sticker={sticker}
                 size={{ label: "", value: "1:1", w: 600, h: 600 }}
               />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Mobile Save Image Modal ─────────────────────────── */}
+      <AnimatePresence>
+        {saveImageUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[300] bg-black/90 flex flex-col items-center justify-center p-4 gap-5"
+            onClick={() => setSaveImageUrl(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 30 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9 }}
+              className="w-full max-w-sm flex flex-col items-center gap-4"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Instruction badge */}
+              <div className="flex items-center gap-2 px-4 py-2 bg-[#C9A84C] rounded-full">
+                <ImageDown className="w-4 h-4 text-[#1A1A2E]" />
+                <p className="text-[#1A1A2E] font-bold text-sm">
+                  Tap &amp; Hold the image → Save to Photos
+                </p>
+              </div>
+
+              {/* The generated image */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={saveImageUrl}
+                alt="Eid Mubarak Card"
+                className="w-full rounded-2xl shadow-2xl border-2 border-[#C9A84C]/40"
+                style={{ maxHeight: "60vh", objectFit: "contain" }}
+              />
+
+              <p className="text-white/60 text-xs text-center">
+                iPhone: Tap &amp; hold → &quot;Add to Photos&quot;<br />
+                Android: Tap &amp; hold → &quot;Download Image&quot;
+              </p>
+
+              <button
+                onClick={() => setSaveImageUrl(null)}
+                className="px-6 py-3 glass text-white rounded-full text-sm min-h-[44px]"
+              >
+                Close
+              </button>
             </motion.div>
           </motion.div>
         )}
