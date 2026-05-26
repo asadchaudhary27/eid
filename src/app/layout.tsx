@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display, Amiri, Great_Vibes, Cormorant_Garamond } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import Navigation from "@/components/Navigation";
@@ -14,6 +14,14 @@ const cormorant = Cormorant_Garamond({ variable: "--font-cormorant", weight: ["4
 export const metadata: Metadata = {
   title: "Eid ul Adha Mubarak — Create & Share Greeting Cards",
   description: "Create beautiful personalized Eid ul Adha greeting cards. Customize with your name, download as JPG, and share with family and friends.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  interactiveWidget: "resizes-visual",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

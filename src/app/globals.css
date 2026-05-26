@@ -123,3 +123,18 @@ body {
 .animate-glow-pulse { animation: glow-pulse 3s ease-in-out infinite; }
 .animate-twinkle { animation: twinkle 2s ease-in-out infinite; }
 .animate-spin-slow { animation: spin-slow 20s linear infinite; }
+
+/* ── Mobile touch fixes ─────────────────────────────────────────
+   touch-action: manipulation  → eliminates the 300ms tap delay on iOS/Android
+   -webkit-tap-highlight-color → removes grey flash on tap
+   These two lines make every button/link feel instant on mobile.
+──────────────────────────────────────────────────────────────── */
+a, button, [role="button"], select, input, textarea, label {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Ensure decorative absolute elements never block touches */
+.pointer-events-none {
+  pointer-events: none !important;
+}

@@ -51,12 +51,12 @@ export default function HomePage() {
   };
 
   return (
-    <div className="relative overflow-hidden" style={{ background: "var(--bg)" }}>
+    <div className="relative" style={{ background: "var(--bg)" }}>
       <Toast />
       <audio ref={audioRef} loop src="https://cdn.pixabay.com/download/audio/2023/04/07/audio_4d98d28a3f.mp3" />
 
       {/* ── HERO ──────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex items-center justify-center px-4 pb-24 overflow-hidden">
+      <section className="relative min-h-screen flex items-center justify-center px-4 pb-24">
         {/* Stars background */}
         <div className="absolute inset-0 pointer-events-none">
           {STARS.map(s => (
@@ -74,11 +74,11 @@ export default function HomePage() {
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#C9A84C]/10 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-[#1B4332]/30 rounded-full blur-[100px] pointer-events-none" />
 
-        {/* Crescent moon */}
+        {/* Crescent moon — pointer-events-none so it never blocks taps */}
         <motion.div
           animate={{ y: [-10, 10, -10] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-16 right-8 md:right-1/4 w-24 h-24 md:w-40 md:h-40 rounded-full border-r-[10px] border-b-[10px] border-[#C9A84C] rotate-45 opacity-80"
+          className="absolute top-16 right-8 md:right-1/4 w-24 h-24 md:w-40 md:h-40 rounded-full border-r-[10px] border-b-[10px] border-[#C9A84C] rotate-45 opacity-80 pointer-events-none"
           style={{ boxShadow: "8px 8px 40px rgba(201,168,76,0.4)" }}
         />
 
@@ -143,19 +143,21 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.8 }}
-            className="flex flex-col sm:flex-row gap-4 mt-4"
+            className="flex flex-col sm:flex-row gap-4 mt-4 w-full sm:w-auto"
           >
             <Link
               href="/customize"
               id="create-card-btn"
-              className="flex items-center justify-center gap-2 px-8 py-4 bg-[#C9A84C] hover:bg-[#A07830] text-[#1A1A2E] font-bold rounded-full transition-all hover:scale-105 shadow-[0_0_25px_rgba(201,168,76,0.4)] text-base"
+              className="flex items-center justify-center gap-2 px-8 py-4 bg-[#C9A84C] text-[#1A1A2E] font-bold rounded-full shadow-[0_0_25px_rgba(201,168,76,0.4)] text-base active:scale-95 transition-transform"
+              style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" } as React.CSSProperties}
             >
               <Sparkles className="w-5 h-5" /> Create Your Card
             </Link>
             <Link
               href="/gallery"
               id="browse-cards-btn"
-              className="flex items-center justify-center gap-2 px-8 py-4 glass-gold text-[#C9A84C] font-bold rounded-full transition-all hover:scale-105 hover:bg-[#C9A84C]/20 border border-[#C9A84C]/40 text-base"
+              className="flex items-center justify-center gap-2 px-8 py-4 glass-gold text-[#C9A84C] font-bold rounded-full border border-[#C9A84C]/40 text-base active:scale-95 transition-transform"
+              style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" } as React.CSSProperties}
             >
               <Images className="w-5 h-5" /> Browse Cards
             </Link>
