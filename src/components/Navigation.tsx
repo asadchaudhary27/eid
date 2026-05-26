@@ -71,18 +71,19 @@ export default function Navigation() {
       {menuOpen && (
         <div className="md:hidden border-t border-[--surface-border] bg-[var(--bg)] px-4 py-4 flex flex-col gap-2">
           {navLinks.map(({ href, label }) => (
-            <Link
+            <a
               key={href}
               href={href}
               onClick={() => setMenuOpen(false)}
-              className={`px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+              className={`block px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                 pathname === href
                   ? "bg-[#C9A84C] text-[#1A1A2E]"
                   : "text-[var(--text)] hover:bg-[#C9A84C]/15"
               }`}
+              style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent", minHeight: 44 } as React.CSSProperties}
             >
               {label}
-            </Link>
+            </a>
           ))}
         </div>
       )}
