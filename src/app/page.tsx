@@ -7,13 +7,19 @@ import Toast from "@/components/Toast";
 
 // ── Countdown ─────────────────────────────────────────────────
 function useCountdown(target: Date) {
-  const [diff, setDiff] = useState(target.getTime() - Date.now());
+  const [mounted, setMounted] = useState(false);
+  const [diff, setDiff] = useState(0);
+
   useEffect(() => {
+    setMounted(true);
+    setDiff(target.getTime() - Date.now());
     const id = setInterval(() => setDiff(target.getTime() - Date.now()), 1000);
     return () => clearInterval(id);
   }, [target]);
+
   const total = Math.max(0, diff);
   return {
+    mounted,
     days:    Math.floor(total / 86400000),
     hours:   Math.floor((total % 86400000) / 3600000),
     minutes: Math.floor((total % 3600000) / 60000),
@@ -33,7 +39,7 @@ const STARS = Array.from({ length: 60 }, (_, i) => ({
 
 export default function HomePage() {
   const eidDate = new Date("2026-05-27T06:00:00+05:00");
-  const { days, hours, minutes, seconds } = useCountdown(eidDate);
+  const { mounted, days, hours, minutes, seconds } = useCountdown(eidDate);
 
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -187,7 +193,7 @@ export default function HomePage() {
               {[{ label: "Days", value: days }, { label: "Hours", value: hours }, { label: "Minutes", value: minutes }, { label: "Seconds", value: seconds }].map(({ label, value }) => (
                 <div key={label} className="flex flex-col items-center gap-2">
                   <div className="w-full aspect-square glass rounded-2xl flex items-center justify-center text-3xl md:text-5xl font-bold text-[#C9A84C]">
-                    {String(value).padStart(2, "0")}
+                    {mounted ? String(value).padStart(2, "0") : "--"}
                   </div>
                   <span className="text-xs uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>{label}</span>
                 </div>
